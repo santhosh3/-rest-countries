@@ -17,73 +17,64 @@ function App() {
 
 
   const [countries, setCountries] = useState([]);
-  const noCountries = countries.status || countries.message
-  useEffect(() => {
+  const [FilteredCountries, setFilteredCountries] = useState([]);
+  const [countriesList, setCountriesList] = useState([]);
+
+  let url = 'https:restcountries.com/v2/all'
+
+  const fetchAPIData = async() => {
     try {
-      fetchData();
+      const response = await fetch(url);
+      const data = await response.json();
+      setCountries(data);
+      setFilteredCountries(data);
+      let obj = {}
+      data.forEach((country) => {
+        if(!obj[country.region]){
+            obj[country.region] = [country.region]
+        }
+      });
+      setCountriesList(Object.keys(obj));
     } catch (error) {
-      console.log(error)
+      console.error(error)
     }
-  },[]);
-
-  const fetchData = async() => {
-    const response = await fetch("https://restcountries.com/v2/all");
-    const resp = await response.json();
-
-    if(resp.status === 404){
-      setCountries([]);
-      return;
-    }
-
-    setCountries(resp)
   }
-  
+
+  useEffect(() => {
+    fetchAPIData();
+  },[])
 
   const searchCountries = (e) => {
     let {value} = e.target
-    if(value.trim()){
-      const fetchSearch = async() => {
-        const response = await fetch(`https://restcountries.com/v2/name/${value}`)
-        let data = await response.json();
-         setCountries(data);
-      };
-      try {
-        fetchSearch();
-      } catch (error) {
-        console.log(error)
+    const newCountry = countries.filter((country) => {
+      let countryName = country.name.toLowerCase()
+      if(countryName.includes(value.toLowerCase())){
+         return country
       }
-    } else {
-      fetchData();
-    }
-  };
-
-  const selectRegion = (e) => {
-     let {value} = e.target
-     if(value){
-        const fetchSelect = async() => {
-          const response = await fetch(`https://restcountries.com/v2/region/${value}`);
-          console.log(value)
-          const data = await response.json();
-          if(value == "All"){
-            try {
-              fetchData()
-            } catch (error) {
-              console.log(error)
-            }
-            return;
-          }
-          setCountries(data);
-        };
-        try {
-          fetchSelect()
-        } catch (error) {
-          console.log(error)
-        }
-     }
+    })
+    setFilteredCountries([...newCountry])
   }
 
-  const showDetails = (code) => {
-     navigate(`${code}`)
+
+  const selectRegion = (e) => {
+    let {value} = e.target
+    if(value == 'All'){
+       setFilteredCountries([...countries])
+    }else{
+      let {value} = e.target
+      let newCountry = countries.filter((country) => {
+      let regionName = country.region
+      if(regionName.includes(value)){
+         return country
+      }
+    })
+    setFilteredCountries([...newCountry])
+    }
+  }
+
+
+  const showDetails = (name) => {
+     navigate(`${name}`)
   }
 
   return (
@@ -101,17 +92,19 @@ function App() {
           <div className={`select_region ${darkMode ? 'darkMode' : ''}`}>
           <select onChange={(e) => selectRegion(e)}>
              <option>All</option>
-             <option>Africa</option>
-             <option>Americas</option>
-             <option>Asia</option>
-             <option>Europe</option>
-             <option>Oceania</option>
+            {
+              countriesList.map((name) => {
+                return (
+                  <option key={name.numericCode} value={name}>{name}</option>
+                )
+              })
+            }
           </select>
           </div>
         </div>
         <div className='countries'>
           {
-            !noCountries ? (countries.map((country) => (
+             FilteredCountries.length>0 ? (FilteredCountries.map((country) => (
               <Country darkMode={darkMode}
               key = {country.alpha3Code}
               code = {country.alpha3Code}
@@ -119,7 +112,7 @@ function App() {
               capital = {country.capital}
               population = {country.population}
               region = {country.region}
-              flag = {country.flag}
+              flag = {country.flags.png}
               showDetails = {showDetails}
               />
             ))) : (<p>No countries found...</p>)
@@ -127,7 +120,7 @@ function App() {
         </div>
        </div>
       }/>
-     <Route path='/:countryCode' element={<CountryDetail darkMode={darkMode} countries={countries}/>} />
+     <Route path='/:countryCode' element={<CountryDetail darkMode={darkMode}/>} />
      </Routes>
     
     </div>

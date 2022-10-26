@@ -2,7 +2,7 @@
 import React from 'react'
 import '../App.css'
 
-function Country({darkMode, name, capital, population, region, flag, showDetails,code}) {
+function Country({darkMode, name, capital, population, region, flag,code,showDetails}) {
   const showDetailsHandler = () => {
     showDetails(code)
   }
